@@ -1,4 +1,7 @@
 import gym
+import numpy as np
+import gym.spaces as spaces
+from gym import ObservationWrapper
 
 try:
     from doom_py import ScreenResolution
@@ -35,3 +38,17 @@ def SetResolution(target_resolution):
             self.observation_space = self.unwrapped.observation_space
 
     return SetResolutionWrapper
+
+
+
+
+class FlattenScaleObservation(ObservationWrapper):
+    r"""Observation wrapper that flattens the observation and scales image to [0,1]."""
+    def __init__(self, env):
+        super(FlattenScaleObservation, self).__init__(env)
+
+        flatdim = spaces.flatdim(env.observation_space)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(flatdim,), dtype=np.float32)
+
+    def observation(self, observation):
+        return spaces.flatten(self.env.observation_space, observation) / 255.

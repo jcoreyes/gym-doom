@@ -8,6 +8,7 @@ import numpy as np
 import gym
 from gym import spaces, error
 from gym.utils import seeding
+from .wrappers.old_gym_discrete import MultiDiscrete
 
 try:
     import doom_py
@@ -71,7 +72,9 @@ class DoomEnv(gym.Env):
         self.is_initialized = False                 # Indicates that reset() has been called
         self.curr_seed = 0
         self.lock = (DoomLock()).get_lock()
-        self.action_space = spaces.MultiDiscrete([[0, 1]] * 38 + [[-10, 10]] * 2 + [[-100, 100]] * 3)
+        #self.action_space = spaces.MultiDiscrete([[0, 1]] * 38 + [[-10, 10]] * 2 + [[-100, 100]] * 3)
+        self.action_space = MultiDiscrete([[0, 1]] * 38 + [[-10, 10]] * 2 + [[-100, 100]] * 3)
+        #self.action_space = MultiDiscrete([2]*38 + [])
         self.allowed_actions = list(range(NUM_ACTIONS))
         self.screen_height = 480
         self.screen_width = 640
