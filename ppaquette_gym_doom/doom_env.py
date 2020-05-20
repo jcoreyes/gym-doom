@@ -80,6 +80,7 @@ class DoomEnv(gym.Env):
         self.screen_width = 640
         self.screen_resolution = ScreenResolution.RES_640X480
         self.observation_space = spaces.Box(low=0, high=255, shape=(self.screen_height, self.screen_width, 3))
+        self.frame_skip  = 2
         self._seed()
         self._configure()
 
@@ -178,29 +179,35 @@ class DoomEnv(gym.Env):
         return
 
     def _step(self, action):
-        if NUM_ACTIONS != len(action):
-            logger.warn('Doom action list must contain %d items. Padding missing items with 0' % NUM_ACTIONS)
-            old_action = action
-            action = [0] * NUM_ACTIONS
-            for i in range(len(old_action)):
-                action[i] = old_action[i]
-        # action is a list of numbers but DoomGame.make_action expects a list of ints
-        if len(self.allowed_actions) > 0:
-            list_action = [int(action[action_idx]) for action_idx in self.allowed_actions]
+        if isinstance(action, int):
+            # expects onehot, so convert to onehot
+            list_action = [0] * (len(self.allowed_actions) + 1)
+            list_action[action] = 1
         else:
-            list_action = [int(x) for x in action]
-        try:
-            reward = self.game.make_action(list_action)
-            state = self.game.get_state()
-            info = self._get_game_variables(state.game_variables)
-            info["TOTAL_REWARD"] = round(self.game.get_total_reward(), 4)
-
-            if self.game.is_episode_finished():
-                is_finished = True
-                return np.zeros(shape=self.observation_space.shape, dtype=np.uint8), reward, is_finished, info
+            if NUM_ACTIONS != len(action):
+                logger.warn('Doom action list must contain %d items. Padding missing items with 0' % NUM_ACTIONS)
+                old_action = action
+                action = [0] * NUM_ACTIONS
+                for i in range(len(old_action)):
+                    action[i] = old_action[i]
+            # action is a list of numbers but DoomGame.make_action expects a list of ints
+            if len(self.allowed_actions) > 0:
+                list_action = [int(action[action_idx]) for action_idx in self.allowed_actions]
             else:
-                is_finished = False
-                return state.image_buffer.copy(), reward, is_finished, info
+                list_action = [int(x) for x in action]
+        try:
+            reward = 0
+            for i in range(self.frame_skip):
+                reward += self.game.make_action(list_action)
+                state = self.game.get_state()
+                #info = self._get_game_variables(state.game_variables)
+                #info["TOTAL_REWARD"] = round(self.game.get_total_reward(), 4)
+                info = {}
+                if self.game.is_episode_finished():
+                    is_finished = True
+                    return np.zeros(shape=self.observation_space.shape, dtype=np.uint8), reward, is_finished, info
+            is_finished = False
+            return state.image_buffer.copy(), reward, is_finished, info
 
         except doom_py.vizdoom.ViZDoomIsNotRunningException:
             return np.zeros(shape=self.observation_space.shape, dtype=np.uint8), 0, True, {}

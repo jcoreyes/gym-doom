@@ -40,7 +40,19 @@ def SetResolution(target_resolution):
     return SetResolutionWrapper
 
 
+class CropObservation(ObservationWrapper):
+    r"""Observation wrapper that flattens the observation and scales image to [0,1]."""
+    def __init__(self, env, x1, y1, width, height):
+        super(CropObservation, self).__init__(env)
+        self.x1 = x1
+        self.y1 = y1
+        self.width = width
+        self.height = height
+        self.observation_space = spaces.Box(low=0, high=255, shape=(height, width, 3), dtype=np.float32)
 
+    def observation(self, observation):
+        # Original image is 480, 360
+        return observation[self.y1:self.y1+self.height, self.x1:self.x1+self.width]
 
 class FlattenScaleObservation(ObservationWrapper):
     r"""Observation wrapper that flattens the observation and scales image to [0,1]."""
@@ -51,4 +63,16 @@ class FlattenScaleObservation(ObservationWrapper):
         self.observation_space = spaces.Box(low=0, high=1, shape=(flatdim,), dtype=np.float32)
 
     def observation(self, observation):
+        import ipdb; ipdb.set_trace()
         return spaces.flatten(self.env.observation_space, observation) / 255.
+
+class FlattenScaleSwapAxisObservation(ObservationWrapper):
+    r"""Observation wrapper that flattens the observation and scales image to [0,1]."""
+    def __init__(self, env):
+        super(FlattenScaleSwapAxisObservation, self).__init__(env)
+
+        flatdim = spaces.flatdim(env.observation_space)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(flatdim,), dtype=np.float32)
+
+    def observation(self, observation):
+        return spaces.flatten(self.env.observation_space, np.moveaxis(observation, -1, 0)) / 255.
