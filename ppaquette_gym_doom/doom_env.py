@@ -3,6 +3,7 @@ import os
 from time import sleep
 import multiprocessing
 
+import cv2
 import numpy as np
 
 import gym
@@ -83,6 +84,7 @@ class DoomEnv(gym.Env):
         self.frame_skip  = 2
         self._seed()
         self._configure()
+        self.env_info_sizes = {}
 
     def _configure(self, lock=None, **kwargs):
         if 'screen_resolution' in kwargs:
@@ -179,22 +181,23 @@ class DoomEnv(gym.Env):
         return
 
     def _step(self, action):
-        if isinstance(action, int):
-            # expects onehot, so convert to onehot
-            list_action = [0] * (len(self.allowed_actions) + 1)
-            list_action[action] = 1
-        else:
-            if NUM_ACTIONS != len(action):
-                logger.warn('Doom action list must contain %d items. Padding missing items with 0' % NUM_ACTIONS)
-                old_action = action
-                action = [0] * NUM_ACTIONS
-                for i in range(len(old_action)):
-                    action[i] = old_action[i]
-            # action is a list of numbers but DoomGame.make_action expects a list of ints
-            if len(self.allowed_actions) > 0:
-                list_action = [int(action[action_idx]) for action_idx in self.allowed_actions]
-            else:
-                list_action = [int(x) for x in action]
+        list_action = action
+        # if isinstance(action, int):
+        #     # expects onehot, so convert to onehot
+        #     list_action = [0] * (len(self.allowed_actions) + 1)
+        #     list_action[action] = 1
+        # else:
+        # if NUM_ACTIONS != len(action):
+        #     logger.warn('Doom action list must contain %d items. Padding missing items with 0' % NUM_ACTIONS)
+        #     old_action = action
+        #     action = [0] * NUM_ACTIONS
+        #     for i in range(len(old_action)):
+        #         action[i] = old_action[i]
+        # # action is a list of numbers but DoomGame.make_action expects a list of ints
+        # if len(self.allowed_actions) > 0:
+        #     list_action = [int(action[action_idx]) for action_idx in self.allowed_actions]
+        # else:
+        #     list_action = [int(x) for x in action]
         try:
             reward = 0
             for i in range(self.frame_skip):
@@ -204,8 +207,10 @@ class DoomEnv(gym.Env):
                 #info["TOTAL_REWARD"] = round(self.game.get_total_reward(), 4)
                 info = {}
                 if self.game.is_episode_finished():
-                    is_finished = True
-                    return np.zeros(shape=self.observation_space.shape, dtype=np.uint8), reward, is_finished, info
+                    #is_finished = True
+                    #return np.zeros(shape=self.observation_space.shape, dtype=np.uint8), reward, is_finished, info
+                    is_finished = False
+                    return self._reset(), reward, is_finished, info
             is_finished = False
             return state.image_buffer.copy(), reward, is_finished, info
 
@@ -228,6 +233,7 @@ class DoomEnv(gym.Env):
             return self._load_level()
 
     def _render(self, mode='human', close=False):
+
         if close:
             if self.viewer is not None:
                 self.viewer.close()
@@ -243,6 +249,13 @@ class DoomEnv(gym.Env):
             if img is None:
                 img = np.zeros(shape=self.observation_space.shape, dtype=np.uint8)
             if mode == 'rgb_array':
+                # TODO Crop and scale to 64 x 64 for now
+                # original is 480, 640
+                size = 300
+                x1 = (640 - size) // 2
+                #import ipdb; ipdb.set_trace()
+                img = img[80:80+size, x1:x1+size, :]
+                img = cv2.resize(img, (64, 64), interpolation=cv2.INTER_AREA)
                 return img
             elif mode is 'human':
                 from gym.envs.classic_control import rendering

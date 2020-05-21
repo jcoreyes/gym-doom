@@ -51,7 +51,7 @@ class CropObservation(ObservationWrapper):
         self.observation_space = spaces.Box(low=0, high=255, shape=(height, width, 3), dtype=np.float32)
 
     def observation(self, observation):
-        # Original image is 480, 360
+        # Original image is 480, 640
         return observation[self.y1:self.y1+self.height, self.x1:self.x1+self.width]
 
 class FlattenScaleObservation(ObservationWrapper):
@@ -76,3 +76,22 @@ class FlattenScaleSwapAxisObservation(ObservationWrapper):
 
     def observation(self, observation):
         return spaces.flatten(self.env.observation_space, np.moveaxis(observation, -1, 0)) / 255.
+
+class DictObservation(ObservationWrapper):
+    r"""Observation wrapper that returns dict of observations instead"""
+    def __init__(self, env):
+        super().__init__(env)
+        flatdim = spaces.flatdim(env.observation_space)
+        self.observation_space = gym.spaces.Dict(dict(image=gym.spaces.Box(low=0, high=1, shape=(flatdim,)),
+                                                      state=gym.spaces.Box(low=0, high=1, shape=(flatdim,))))
+                                                      # insides=gym.spaces.Box(low=0., high=1., shape=(self._n_particles,)),
+                                                      # distances=gym.spaces.Box(low=-2*self._half_width,
+                                                      #                          high=-2*self._half_width, shape=(self._n_particles,))))
+
+    def observation(self, observation):
+        return dict(
+            image=observation,
+            #state=observation
+        )
+
+
