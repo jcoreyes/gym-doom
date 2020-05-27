@@ -15,6 +15,8 @@ from .doom_deathmatch import DoomDeathmatchEnv
 # Env registration
 # ==========================
 
+
+
 register(
     id='{}/meta-Doom-v0'.format(USERNAME),
     entry_point='{}_gym_doom:MetaDoomEnv'.format(USERNAME),

@@ -110,3 +110,12 @@ class DoomDefendLineEnv(DoomEnv):
     """
     def __init__(self):
         super(DoomDefendLineEnv, self).__init__(3)
+        #self.game.set_render_screen_flashes(True)
+
+
+    def _start_episode(self):
+        if self.curr_seed > 0:
+            self.game.set_seed(self.curr_seed)
+            self.curr_seed = 0
+        self.game.new_episode()
+        self.game.send_game_command('god2')
