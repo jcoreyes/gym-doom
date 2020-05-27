@@ -180,12 +180,12 @@ class DoomEnv(gym.Env):
         return
 
     def _step(self, action):
-        list_action = action
-        # if isinstance(action, int):
-        #     # expects onehot, so convert to onehot
-        #     list_action = [0] * (len(self.allowed_actions) + 1)
-        #     list_action[action] = 1
-        # else:
+        if isinstance(action, int):
+            # expects onehot, so convert to onehot
+            list_action = [0] * (len(self.allowed_actions) + 1)
+            list_action[action] = 1
+        else:
+            list_action = action
         # if NUM_ACTIONS != len(action):
         #     logger.warn('Doom action list must contain %d items. Padding missing items with 0' % NUM_ACTIONS)
         #     old_action = action
